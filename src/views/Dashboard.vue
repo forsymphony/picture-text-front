@@ -1,0 +1,412 @@
+<template>
+  <div class="image-recognition-container">
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h2>图片识别</h2>
+      <p>请对图片进行标注和处理</p>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+      <el-row :gutter="40">
+        <!-- 左侧：图片显示和选项区域 -->
+        <el-col :span="16">
+          <el-card class="image-card">
+            <!-- 图片显示区域 -->
+            <div class="image-container">
+              <div class="image-placeholder" v-if="!currentImage">
+                <el-icon class="placeholder-icon"><Picture /></el-icon>
+                <p>等待加载图片...</p>
+              </div>
+              <img v-else :src="currentImage" alt="当前图片" class="current-image" />
+            </div>
+
+            <!-- 选项区域 -->
+            <div class="options-section">
+              <div class="option-group">
+                <label class="option-label">是否是正文：</label>
+                <el-radio-group v-model="isMainText" class="radio-group">
+                  <el-radio :label="true">是</el-radio>
+                  <el-radio :label="false">否</el-radio>
+                </el-radio-group>
+              </div>
+
+              <div class="option-group">
+                <label class="option-label">是否已无水印：</label>
+                <el-radio-group v-model="isWatermarkFree" class="radio-group">
+                  <el-radio :label="true">是</el-radio>
+                  <el-radio :label="false">否</el-radio>
+                </el-radio-group>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+
+        <!-- 右侧：操作按钮区域 -->
+        <el-col :span="8">
+          <el-card class="action-card">
+            <div class="action-buttons">
+              <el-button 
+                type="primary" 
+                size="large" 
+                class="action-btn"
+                :disabled="!canProceedNext"
+                @click="handleNextImage"
+              >
+                <el-icon><ArrowRight /></el-icon>
+                下一张
+              </el-button>
+
+              <el-upload
+                class="upload-wrapper"
+                :show-file-list="false"
+                :before-upload="handleUploadImage"
+                accept="image/*"
+              >
+                <el-button 
+                  type="success" 
+                  size="large" 
+                  class="action-btn"
+                  :loading="uploading"
+                >
+                  <el-icon><Upload /></el-icon>
+                  {{ uploading ? '上传中...' : '上传图片' }}
+                </el-button>
+              </el-upload>
+
+              <el-button 
+                type="warning" 
+                size="large" 
+                class="action-btn split-btn"
+                :loading="splitProcessing"
+                @click="handleSplitImage"
+              >
+                <el-icon><Operation /></el-icon>
+                {{ splitProcessing ? '处理中...' : '该图为拆分图' }}
+              </el-button>
+            </div>
+
+            <!-- 当前状态显示 -->
+            <div class="status-info">
+              <el-divider>当前状态</el-divider>
+              <div class="status-item">
+                <span class="status-label">正文状态：</span>
+                <el-tag :type="isMainText === null ? 'info' : (isMainText ? 'success' : 'warning')">
+                  {{ isMainText === null ? '未选择' : (isMainText ? '是正文' : '非正文') }}
+                </el-tag>
+              </div>
+              <div class="status-item">
+                <span class="status-label">水印状态：</span>
+                <el-tag :type="isWatermarkFree === null ? 'info' : (isWatermarkFree ? 'success' : 'warning')">
+                  {{ isWatermarkFree === null ? '未选择' : (isWatermarkFree ? '已无水印' : '有水印') }}
+                </el-tag>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import https from '../utils/https'
+
+// 响应式数据
+const currentImage = ref(null)
+const isMainText = ref(null)
+const isWatermarkFree = ref(null)
+const uploading = ref(false)
+const splitProcessing = ref(false)
+
+// 计算属性：是否可以进行下一张
+const canProceedNext = computed(() => {
+  return isMainText.value !== null && isWatermarkFree.value !== null
+})
+
+// 获取当前图片（注释版本）
+/*
+const getCurrentImage = async () => {
+  try {
+    const response = await https.get('/api/images/current')
+    if (response.code === 200) {
+      currentImage.value = response.data.imageUrl
+    }
+  } catch (error) {
+    ElMessage.error('获取图片失败')
+  }
+}
+*/
+
+// 下一张图片
+const handleNextImage = async () => {
+  if (!canProceedNext.value) {
+    ElMessage.warning('请先完成当前图片的标注')
+    return
+  }
+
+  try {
+    // 提交当前图片的标注信息
+    /*
+    await https.post('/api/images/annotate', {
+      isMainText: isMainText.value,
+      isWatermarkFree: isWatermarkFree.value
+    })
+    */
+
+    // 获取下一张图片
+    /*
+    const response = await https.get('/api/images/next')
+    if (response.code === 200) {
+      currentImage.value = response.data.imageUrl
+      // 重置选项
+      isMainText.value = null
+      isWatermarkFree.value = null
+      ElMessage.success('已切换到下一张图片')
+    }
+    */
+
+    // 临时模拟：重置选项
+    isMainText.value = null
+    isWatermarkFree.value = null
+    ElMessage.success('已切换到下一张图片（模拟）')
+  } catch (error) {
+    ElMessage.error('切换图片失败')
+  }
+}
+
+// 上传图片
+const handleUploadImage = async (file) => {
+  uploading.value = true
+  
+  try {
+    /*
+    const formData = new FormData()
+    formData.append('image', file)
+    
+    const response = await https.post('/api/images/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    
+    if (response.code === 200) {
+      currentImage.value = response.data.imageUrl
+      // 重置选项
+      isMainText.value = null
+      isWatermarkFree.value = null
+      ElMessage.success('图片上传成功')
+    }
+    */
+
+    // 临时模拟：显示上传的图片
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      currentImage.value = e.target.result
+      // 重置选项
+      isMainText.value = null
+      isWatermarkFree.value = null
+      ElMessage.success('图片上传成功（模拟）')
+    }
+    reader.readAsDataURL(file)
+  } catch (error) {
+    ElMessage.error('图片上传失败')
+  } finally {
+    uploading.value = false
+  }
+
+  return false // 阻止默认上传行为
+}
+
+// 拆分图片处理
+const handleSplitImage = async () => {
+  try {
+    // 二次确认弹窗
+    await ElMessageBox.confirm(
+      '确定将当前图片标记为拆分图吗？确认后将自动跳转到下一张图片。',
+      '拆分图确认',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning',
+        center: true
+      }
+    )
+
+    splitProcessing.value = true
+
+    try {
+      // 发送拆分图请求到后端
+      /*
+      await https.post('/api/images/mark-split', {
+        imageId: currentImage.value?.id, // 假设图片有ID
+        isMainText: isMainText.value,
+        isWatermarkFree: isWatermarkFree.value
+      })
+      */
+
+      // 模拟请求延迟
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      ElMessage.success('已标记为拆分图')
+
+      // 自动跳转到下一张
+      await handleNextImage()
+    } catch (error) {
+      ElMessage.error('标记拆分图失败')
+      console.error('拆分图处理失败:', error)
+    } finally {
+      splitProcessing.value = false
+    }
+  } catch (error) {
+    // 用户取消操作
+    console.log('用户取消拆分操作')
+  }
+}
+
+// 页面加载时获取初始图片
+// getCurrentImage()
+</script>
+
+<style scoped>
+.image-recognition-container {
+  padding: 20px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 140px);
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.page-header h2 {
+  color: #303133;
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+
+.page-header p {
+  color: #909399;
+  font-size: 14px;
+  margin: 0;
+}
+
+.main-content {
+  height: 600px;
+}
+
+.image-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.image-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 2px dashed #dcdfe6;
+  margin-bottom: 20px;
+  min-height: 400px;
+}
+
+.image-placeholder {
+  text-align: center;
+  color: #909399;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.current-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.options-section {
+  padding: 20px 0;
+}
+
+.option-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.option-label {
+  width: 120px;
+  font-weight: 500;
+  color: #606266;
+}
+
+.radio-group {
+  flex: 1;
+}
+
+.action-card {
+  height: 100%;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.action-btn {
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+}
+
+.split-btn {
+  border-color: #e6a23c;
+  background-color: #f0ad4e;
+}
+
+.upload-wrapper {
+  width: 100%;
+}
+
+:deep(.upload-wrapper .el-upload) {
+  width: 100%;
+}
+
+.status-info {
+  margin-top: 20px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.status-label {
+  font-size: 14px;
+  color: #606266;
+}
+
+:deep(.el-card__body) {
+  padding: 20px;
+  height: calc(100% - 40px);
+  display: flex;
+  flex-direction: column;
+}
+</style>
