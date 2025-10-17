@@ -49,6 +49,7 @@
                   :rows="12"
                   placeholder="请输入或修改图片描述..."
                   class="description-textarea"
+                  :disabled="isDescriptionConsistent !== false"
                 />
               </div>
 
@@ -102,12 +103,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import https from '../utils/https'
+import { getConfirmTaskApi, confirmTaskApi } from '../api/manage'
 
 // 响应式数据
 const currentImage = ref(null)
 const description = ref('')
 const isDescriptionConsistent = ref(null)
+const currentImageId = ref(null)
 
 // 计算属性：是否可以进行下一张
 const canProceedNext = computed(() => {
@@ -115,19 +117,19 @@ const canProceedNext = computed(() => {
 })
 
 // 获取当前图片和描述（注释版本）
-/*
+
 const getCurrentImageAndDescription = async () => {
   try {
-    const response = await https.get('/api/images/current-with-description')
+    const response = await getConfirmTaskApi()
     if (response.code === 200) {
       currentImage.value = response.data.imageUrl
-      description.value = response.data.description || ''
+      currentImageId.value = response.data.id
+      description.value = response.data.description
     }
   } catch (error) {
     ElMessage.error('获取图片和描述失败')
   }
 }
-*/
 
 // 下一张图片
 const handleNextImage = async () => {
@@ -138,36 +140,24 @@ const handleNextImage = async () => {
 
   try {
     // 提交描述修改和确认信息
-    /*
-    await https.post('/api/images/update-description', {
-      description: description.value,
-      isConsistent: isDescriptionConsistent.value
-    })
-    */
-
-    // 获取下一张图片和描述
-    /*
-    const response = await https.get('/api/images/next-with-description')
-    if (response.code === 200) {
-      currentImage.value = response.data.imageUrl
-      description.value = response.data.description || ''
-      // 重置确认状态
-      isDescriptionConsistent.value = null
-      ElMessage.success('已切换到下一张图片')
+    let obj = {
+      dataId: currentImageId.value,
+      isCorrect: isDescriptionConsistent.value,
     }
-    */
+    if (!isDescriptionConsistent.value) {
+      obj.description = description.value
+    } 
+    await confirmTaskApi(obj)
+    // 获取下一张图片和描述
 
-    // 临时模拟：重置状态
-    isDescriptionConsistent.value = null
-    description.value = '这是一张示例图片的描述文字，用户可以在这里进行修改和编辑。'
-    ElMessage.success('已切换到下一张图片（模拟）')
+    getCurrentImageAndDescription()
   } catch (error) {
     ElMessage.error('切换图片失败')
   }
 }
 
 // 页面加载时获取初始数据
-// getCurrentImageAndDescription()
+getCurrentImageAndDescription()
 
 // 模拟初始描述
 description.value = '这是一张示例图片的描述文字，用户可以在这里进行修改和编辑。'
@@ -271,7 +261,7 @@ description.value = '这是一张示例图片的描述文字，用户可以在�
 }
 
 :deep(.description-textarea .el-textarea__inner) {
-  height: 300px !important;
+  height: 200px !important;
   resize: none;
   font-size: 14px;
   line-height: 1.6;

@@ -56,7 +56,7 @@
         </el-header>
         
         <!-- 内容区 -->
-        <el-main>
+        <el-main style="padding: 0;">
           <div class="main-content">
             <router-view />
           </div>

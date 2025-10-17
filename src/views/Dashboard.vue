@@ -112,10 +112,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import https from '../utils/https'
+import { getRecognitionTaskApi, markContentTypeApi, markSplitImageApi, uploadImageApi } from '../api/task'
 
 // 响应式数据
 const currentImage = ref(null)
+const currentImageId = ref(null) // 存储当前图片的ID
 const isMainText = ref(null)
 const isWatermarkFree = ref(null)
 const uploading = ref(false)
@@ -123,22 +124,22 @@ const splitProcessing = ref(false)
 
 // 计算属性：是否可以进行下一张
 const canProceedNext = computed(() => {
-  return isMainText.value !== null && isWatermarkFree.value !== null
+  return isMainText.value !== null && isWatermarkFree.value
 })
 
-// 获取当前图片（注释版本）
-/*
+// 获取当前图片
 const getCurrentImage = async () => {
   try {
-    const response = await https.get('/api/images/current')
+    const response = await getRecognitionTaskApi()
+
     if (response.code === 200) {
-      currentImage.value = response.data.imageUrl
+      currentImageId.value = response.data.id // 存储图片ID
+      currentImage.value = response.data.imageUrl // 设置图片链接
     }
   } catch (error) {
-    ElMessage.error('获取图片失败')
+    console.error('获取图片失败:', error)
   }
 }
-*/
 
 // 下一张图片
 const handleNextImage = async () => {
@@ -149,31 +150,22 @@ const handleNextImage = async () => {
 
   try {
     // 提交当前图片的标注信息
-    /*
-    await https.post('/api/images/annotate', {
-      isMainText: isMainText.value,
-      isWatermarkFree: isWatermarkFree.value
+    const response = await markContentTypeApi({
+      dataId: currentImageId.value,
+      contentType: isMainText.value ? 'MAIN_CONTENT' : 'NON_MAIN_CONTENT',
     })
-    */
 
-    // 获取下一张图片
-    /*
-    const response = await https.get('/api/images/next')
     if (response.code === 200) {
-      currentImage.value = response.data.imageUrl
       // 重置选项
       isMainText.value = null
       isWatermarkFree.value = null
-      ElMessage.success('已切换到下一张图片')
+      
+      // 获取下一张图片
+      await getCurrentImage()
     }
-    */
-
-    // 临时模拟：重置选项
-    isMainText.value = null
-    isWatermarkFree.value = null
-    ElMessage.success('已切换到下一张图片（模拟）')
   } catch (error) {
     ElMessage.error('切换图片失败')
+    console.error('切换图片失败:', error)
   }
 }
 
@@ -182,37 +174,22 @@ const handleUploadImage = async (file) => {
   uploading.value = true
   
   try {
-    /*
     const formData = new FormData()
     formData.append('image', file)
     
-    const response = await https.post('/api/images/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
+    const response = await uploadImageApi(formData)
     
     if (response.code === 200) {
+      currentImageId.value = response.data.id
       currentImage.value = response.data.imageUrl
       // 重置选项
       isMainText.value = null
       isWatermarkFree.value = null
       ElMessage.success('图片上传成功')
     }
-    */
-
-    // 临时模拟：显示上传的图片
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      currentImage.value = e.target.result
-      // 重置选项
-      isMainText.value = null
-      isWatermarkFree.value = null
-      ElMessage.success('图片上传成功（模拟）')
-    }
-    reader.readAsDataURL(file)
   } catch (error) {
     ElMessage.error('图片上传失败')
+    console.error('图片上传失败:', error)
   } finally {
     uploading.value = false
   }
@@ -239,21 +216,20 @@ const handleSplitImage = async () => {
 
     try {
       // 发送拆分图请求到后端
-      /*
-      await https.post('/api/images/mark-split', {
-        imageId: currentImage.value?.id, // 假设图片有ID
-        isMainText: isMainText.value,
-        isWatermarkFree: isWatermarkFree.value
+      const response = await markSplitImageApi({
+        dataId: currentImageId.value
       })
-      */
 
-      // 模拟请求延迟
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      ElMessage.success('已标记为拆分图')
-
-      // 自动跳转到下一张
-      await handleNextImage()
+      if (response.code === 200) {
+        ElMessage.success('已标记为拆分图')
+        
+        // 重置选项
+        isMainText.value = null
+        isWatermarkFree.value = null
+        
+        // 自动获取下一张图片
+        await getCurrentImage()
+      }
     } catch (error) {
       ElMessage.error('标记拆分图失败')
       console.error('拆分图处理失败:', error)
@@ -267,7 +243,7 @@ const handleSplitImage = async () => {
 }
 
 // 页面加载时获取初始图片
-// getCurrentImage()
+getCurrentImage()
 </script>
 
 <style scoped>

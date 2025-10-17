@@ -6,6 +6,13 @@ export default defineConfig({
   server: {
     host: '0.0.0.0', // 允许外部访问
     port: 3000,
-    open: true
+    open: true,
+    proxy: {
+      '/api': {
+        target: 'http://172.21.15.96:8081',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api')
+      }
+    }
   }
 })

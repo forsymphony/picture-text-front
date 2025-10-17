@@ -123,27 +123,28 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import https from '../utils/https'
+import { getSplitTaskApi } from '../api/split'
 
 // 响应式数据
 const originalImage = ref(null)
+const originalImageId = ref(null)
 const previewImages = ref([])
 const uploading = ref(false)
 const confirming = ref(false)
 
 // 获取原始图片（注释版本）
-/*
+
 const getOriginalImage = async () => {
   try {
-    const response = await https.get('/api/images/current-original')
+    const response = await getSplitTaskApi()
     if (response.code === 200) {
+      originalImageId.value = response.data.id
       originalImage.value = response.data.imageUrl
     }
   } catch (error) {
-    ElMessage.error('获取原始图片失败')
+    console.error('获取原始图片失败:', error)
   }
 }
-*/
 
 // 上传图片处理
 const handleUploadImages = async (file) => {
@@ -246,7 +247,7 @@ const handleConfirmUpload = async () => {
 }
 
 // 页面加载时获取原始图片
-// getOriginalImage()
+getOriginalImage()
 
 // 模拟原始图片（开发测试用）
 // originalImage.value = 'https://via.placeholder.com/400x500/4f81bd/ffffff?text=Original+Image'

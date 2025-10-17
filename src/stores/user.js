@@ -1,26 +1,26 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import https from '../utils/https'
+import { loginApi, logoutApi } from '../api/user'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref(localStorage.getItem('token') || '')
   const userInfo = ref(null)
   const isLoggedIn = ref(!!token.value)
 
-  // 登录 - 后端接口版本（已注释）
-  /*
+  // 登录
   const login = async (username) => {
     try {
-      // 这里调用后端登录接口
-      const response = await https.post('/auth/login', { username })
+      // 调用登录接口
+      const response = await loginApi(username)
       
       if (response.code === 200) {
         token.value = response.data.token
-        userInfo.value = response.data.userInfo
+        userInfo.value = { username }
         isLoggedIn.value = true
         
-        // 保存token到本地存储
+        // 保存token和用户信息到本地存储
         localStorage.setItem('token', token.value)
+        localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
         
         return Promise.resolve(response)
       }
@@ -28,55 +28,22 @@ export const useUserStore = defineStore('user', () => {
       return Promise.reject(error)
     }
   }
-  */
-
-  // 登录 - 本地验证版本
-  const login = async (username) => {
-    try {
-      // 本地模拟登录验证
-      if (username === '123') {
-        // 模拟成功登录
-        const mockResponse = {
-          code: 200,
-          message: '登录成功',
-          data: {
-            token: 'mock_token_' + Date.now(),
-            userInfo: {
-              username: username,
-              id: 1
-            }
-          }
-        }
-        
-        token.value = mockResponse.data.token
-        userInfo.value = mockResponse.data.userInfo
-        isLoggedIn.value = true
-        
-        // 保存token和用户信息到本地存储
-        localStorage.setItem('token', token.value)
-        localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
-        
-        return Promise.resolve(mockResponse)
-      } else {
-        // 模拟登录失败
-        const mockError = {
-          code: 400,
-          message: '用户名不存在，请输入正确的用户名'
-        }
-        return Promise.reject(mockError)
-      }
-    } catch (error) {
-      return Promise.reject(error)
-    }
-  }
 
   // 退出登录
-  const logout = () => {
-    token.value = ''
-    userInfo.value = null
-    isLoggedIn.value = false
-    localStorage.removeItem('token')
-    localStorage.removeItem('userInfo')
+  const logout = async () => {
+    try {
+      // 调用登出接口
+      await logoutApi()
+    } catch (error) {
+      console.error('登出接口调用失败:', error)
+    } finally {
+      // 无论接口是否成功，都清除本地数据
+      token.value = ''
+      userInfo.value = null
+      isLoggedIn.value = false
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+    }
   }
 
   // 检查登录状态
