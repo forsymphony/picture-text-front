@@ -31,15 +31,26 @@ export const markSplitImageApi = (data) => {
 }
 
 /**
- * 上传图片
+ * 上传图片到服务器
  * @param {FormData} formData - 图片表单数据
  * @returns {Promise}
  */
 export const uploadImageApi = (formData) => {
-  return https.post('/task/recognition/upload', formData, {
+  return https.post('/api/upload/image', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
   })
+}
+
+/**
+ * 替换当前识别任务的图片
+ * @param {Object} data - 替换数据
+ * @param {number} data.dataId - 当前图片ID
+ * @param {string} data.imageUrl - 新图片URL
+ * @returns {Promise}
+ */
+export const replaceRecognitionImageApi = (data) => {
+  return https.post('/task/recognition/replace', data)
 }
 

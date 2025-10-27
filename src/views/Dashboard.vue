@@ -112,7 +112,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getRecognitionTaskApi, markContentTypeApi, markSplitImageApi, uploadImageApi } from '../api/task'
+import { getRecognitionTaskApi, markContentTypeApi, markSplitImageApi, uploadImageApi, replaceRecognitionImageApi } from '../api/task'
 
 // 响应式数据
 const currentImage = ref(null)
@@ -174,18 +174,29 @@ const handleUploadImage = async (file) => {
   uploading.value = true
   
   try {
+    // 第一步：上传图片到服务器
     const formData = new FormData()
-    formData.append('image', file)
+    formData.append('file', file)
     
-    const response = await uploadImageApi(formData)
+    const uploadResponse = await uploadImageApi(formData)
     
-    if (response.code === 200) {
-      currentImageId.value = response.data.id
-      currentImage.value = response.data.imageUrl
-      // 重置选项
-      isMainText.value = null
-      isWatermarkFree.value = null
-      ElMessage.success('图片上传成功')
+    if (uploadResponse.code === 200) {
+      const imageUrl = uploadResponse.data.imageUrl
+      
+      // 第二步：调用替换接口
+      const replaceResponse = await replaceRecognitionImageApi({
+        dataId: currentImageId.value,
+        imageUrl: imageUrl
+      })
+      
+      if (replaceResponse.code === 200) {
+        // 只更新图片URL，dataId不变
+        currentImage.value = replaceResponse.data.imageUrl
+        // 重置选项
+        isMainText.value = null
+        isWatermarkFree.value = null
+        ElMessage.success('图片上传成功')
+      }
     }
   } catch (error) {
     ElMessage.error('图片上传失败')

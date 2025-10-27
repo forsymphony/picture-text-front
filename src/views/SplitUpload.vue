@@ -122,8 +122,9 @@
 
 <script setup>
 import { ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getSplitTaskApi } from '../api/split'
+import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
+import { getSplitTaskApi, submitSplitImagesApi } from '../api/split'
+import { uploadImageApi } from '../api/task'
 
 // 响应式数据
 const originalImage = ref(null)
@@ -151,18 +152,25 @@ const handleUploadImages = async (file) => {
   uploading.value = true
   
   try {
-    // 创建文件读取器
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const imageData = {
-        url: e.target.result,
-        name: file.name,
-        size: file.size,
-        file: file
+    // 使用Promise确保按顺序添加图片
+    await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const imageData = {
+          url: e.target.result,
+          name: file.name,
+          size: file.size,
+          file: file,
+          timestamp: Date.now() // 添加时间戳确保顺序
+        }
+        previewImages.value.push(imageData)
+        resolve()
       }
-      previewImages.value.push(imageData)
-    }
-    reader.readAsDataURL(file)
+      reader.onerror = () => {
+        reject(new Error('文件读取失败'))
+      }
+      reader.readAsDataURL(file)
+    })
     
     ElMessage.success(`成功添加图片: ${file.name}`)
   } catch (error) {
@@ -200,44 +208,65 @@ const handleConfirmUpload = async () => {
     )
 
     confirming.value = true
+    
+    // 显示全屏loading
+    const loading = ElLoading.service({
+      lock: true,
+      text: '正在上传图片，请稍候...',
+      background: 'rgba(0, 0, 0, 0.7)'
+    })
 
     try {
-      // 发送拆分图片到后端
-      /*
-      const formData = new FormData()
-      previewImages.value.forEach((image, index) => {
-        formData.append(`splitImages`, image.file)
-      })
+      // 按顺序上传每张图片，获取imgUrl列表
+      const imgUrlList = []
       
-      await https.post('/api/images/upload-split', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      for (let i = 0; i < previewImages.value.length; i++) {
+        const imageData = previewImages.value[i]
+        
+        // 更新loading文本显示上传进度
+        loading.setText(`正在上传第 ${i + 1}/${previewImages.value.length} 张图片...`)
+        
+        const formData = new FormData()
+        formData.append('file', imageData.file)
+        
+        const uploadResponse = await uploadImageApi(formData)
+        
+        if (uploadResponse.code === 200) {
+          // 按顺序添加到imgUrl列表
+          imgUrlList.push(uploadResponse.data.imageUrl)
+        } else {
+          throw new Error(`上传第 ${i + 1} 张图片失败`)
         }
-      })
-      */
-
-      // 模拟上传延迟
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      ElMessage.success('拆分图片上传成功')
-
-      // 清空预览图片
-      previewImages.value = []
-
-      // 跳转到下一张（模拟）
-      /*
-      const nextResponse = await https.get('/api/images/next-original')
-      if (nextResponse.code === 200) {
-        originalImage.value = nextResponse.data.imageUrl
-        ElMessage.info('已切换到下一张原始图片')
       }
-      */
       
-      ElMessage.info('已切换到下一张原始图片（模拟）')
+      // 更新loading文本
+      loading.setText('正在提交拆分图片...')
+      
+      // 调用拆分接口
+      const splitResponse = await submitSplitImagesApi({
+        dataId: originalImageId.value,
+        imgUrl: imgUrlList // 保持上传顺序的imgUrl数组
+      })
+      
+      if (splitResponse.code === 200) {
+        ElMessage.success('拆分图片上传成功')
+        
+        // 清空预览图片
+        previewImages.value = []
+        
+        // 获取下一张原始图片
+        await getOriginalImage()
+        
+        ElMessage.info('已切换到下一张原始图片')
+      } else {
+        throw new Error('提交拆分图片失败')
+      }
     } catch (error) {
-      ElMessage.error('上传失败，请重试')
+      ElMessage.error(error.message || '上传失败，请重试')
       console.error('上传失败:', error)
     } finally {
+      // 关闭全屏loading
+      loading.close()
       confirming.value = false
     }
   } catch (error) {
