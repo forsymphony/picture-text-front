@@ -4,6 +4,11 @@
     <div class="page-header">
       <h2>图文描述</h2>
       <p>为图片添加和修改文字描述</p>
+      <div class="batch-info" v-if="currentImages.length > 0">
+        <el-tag type="primary" size="large">分组号: {{ groupNo }}</el-tag>
+        <el-tag type="success" size="large">大类: {{ category }}</el-tag>
+        <el-tag type="info" size="large">进度: {{ currentImageIndex + 1 }} / {{ currentImages.length }}</el-tag>
+      </div>
     </div>
 
     <!-- 主要内容区域 -->
@@ -102,8 +107,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
-import { getConfirmTaskApi, confirmTaskApi } from '../api/manage'
+import { ElMessage, ElLoading } from 'element-plus'
+import { getConfirmTaskBatchApi, confirmTaskBatchApi } from '../api/manage'
 
 // 响应式数据
 const currentImage = ref(null)
@@ -111,23 +116,55 @@ const description = ref('')
 const isDescriptionConsistent = ref(null)
 const currentImageId = ref(null)
 
+// 批量处理相关数据
+const currentImages = ref([]) // 当前批次的所有图片
+const currentImageIndex = ref(0) // 当前显示的图片索引
+const pendingConfirmations = ref([]) // 待提交的确认信息数组
+const splitGroupId = ref(null) // 分组ID
+const category = ref(null) // 大类
+const groupNo = ref(null) // 分组号
+
 // 计算属性：是否可以进行下一张
 const canProceedNext = computed(() => {
   return isDescriptionConsistent.value !== null
 })
 
-// 获取当前图片和描述（注释版本）
-
-const getCurrentImageAndDescription = async () => {
+// 批量获取图片和描述
+const getBatchImages = async () => {
   try {
-    const response = await getConfirmTaskApi()
+    const response = await getConfirmTaskBatchApi()
     if (response.code === 200) {
-      currentImage.value = response.data.imageUrl
-      currentImageId.value = response.data.id
-      description.value = response.data.description
+      // 保存批次信息
+      splitGroupId.value = response.data.splitGroupId
+      category.value = response.data.category
+      groupNo.value = response.data.groupNo
+      currentImages.value = response.data.images || []
+      
+      // 重置索引和待提交数组
+      currentImageIndex.value = 0
+      pendingConfirmations.value = []
+      
+      // 显示第一张图片
+      if (currentImages.value.length > 0) {
+        loadCurrentImage()
+      } else {
+        ElMessage.warning('暂无图片需要确认')
+      }
     }
   } catch (error) {
-    ElMessage.error('获取图片和描述失败')
+    console.error('获取批量图片失败:', error)
+  }
+}
+
+// 加载当前索引的图片
+const loadCurrentImage = () => {
+  const currentImageData = currentImages.value[currentImageIndex.value]
+  if (currentImageData) {
+    currentImage.value = currentImageData.imageUrl
+    currentImageId.value = currentImageData.id
+    description.value = currentImageData.description || ''
+    // 重置确认状态
+    isDescriptionConsistent.value = null
   }
 }
 
@@ -139,28 +176,72 @@ const handleNextImage = async () => {
   }
 
   try {
-    // 提交描述修改和确认信息
-    let obj = {
+    // 保存当前图片的确认信息到待提交数组
+    const confirmData = {
       dataId: currentImageId.value,
       isCorrect: isDescriptionConsistent.value,
     }
+    
+    // 如果描述不一致，添加修改后的描述
     if (!isDescriptionConsistent.value) {
-      obj.description = description.value
-    } 
-    await confirmTaskApi(obj)
-    // 获取下一张图片和描述
-
-    getCurrentImageAndDescription()
+      confirmData.description = description.value
+    }
+    
+    pendingConfirmations.value.push(confirmData)
+    
+    // 判断是否还有下一张图片
+    if (currentImageIndex.value < currentImages.value.length - 1) {
+      // 还有图片，显示下一张
+      currentImageIndex.value++
+      loadCurrentImage()
+    } else {
+      // 没有图片了，批量提交并获取新的批次
+      await submitBatchConfirmations()
+    }
   } catch (error) {
-    ElMessage.error('切换图片失败')
+    ElMessage.error('处理失败')
+    console.error('处理图片失败:', error)
+  }
+}
+
+// 批量提交确认信息
+const submitBatchConfirmations = async () => {
+  if (pendingConfirmations.value.length === 0) {
+    ElMessage.warning('没有待提交的确认信息')
+    return
+  }
+  
+  // 显示全屏loading
+  const loading = ElLoading.service({
+    lock: true,
+    text: '正在提交确认信息...',
+    background: 'rgba(0, 0, 0, 0.7)'
+  })
+  
+  try {
+    // 调用批量确认接口
+    const response = await confirmTaskBatchApi({
+      imageDescriptions: pendingConfirmations.value
+    })
+    
+    if (response.code === 200) {
+      ElMessage.success('批量确认成功')
+      
+      // 获取新的批次
+      await getBatchImages()
+    } else {
+      throw new Error('批量确认失败')
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '批量确认失败')
+    console.error('批量确认失败:', error)
+  } finally {
+    loading.close()
   }
 }
 
 // 页面加载时获取初始数据
-getCurrentImageAndDescription()
-
-// 模拟初始描述
-description.value = '这是一张示例图片的描述文字，用户可以在这里进行修改和编辑。'
+getBatchImages()
 </script>
 
 <style scoped>
@@ -189,6 +270,14 @@ description.value = '这是一张示例图片的描述文字，用户可以在�
   color: #909399;
   font-size: 14px;
   margin: 0;
+}
+
+.batch-info {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  align-items: center;
 }
 
 .main-content {

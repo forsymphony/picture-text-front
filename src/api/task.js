@@ -36,7 +36,7 @@ export const markSplitImageApi = (data) => {
  * @returns {Promise}
  */
 export const uploadImageApi = (formData) => {
-  return https.post('/api/upload/image', formData, {
+  return https.post('/upload/image', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }

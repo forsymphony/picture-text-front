@@ -32,6 +32,12 @@ const routes = [
         name: 'SplitUpload',
         component: () => import('../views/SplitUpload.vue'),
         meta: { requiresAuth: true, title: '拆分图上传' }
+      },
+      {
+        path: '/video',
+        name: 'Video',
+        component: () => import('../views/Video.vue'),
+        meta: { requiresAuth: true, title: '视频处理' }
       }
     ]
   },
