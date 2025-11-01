@@ -60,15 +60,8 @@ router.beforeEach((to, from, next) => {
   // 检查登录状态
   userStore.checkAuth()
   
-  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
-    // 需要登录但未登录，跳转到登录页
-    next('/login')
-  } else if (to.path === '/login' && userStore.isLoggedIn) {
-    // 已登录但访问登录页，跳转到首页
-    next('/dashboard')
-  } else {
-    next()
-  }
+  // 已移除强制登录检查逻辑
+  next()
 })
 
 export default router

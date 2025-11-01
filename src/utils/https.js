@@ -48,10 +48,10 @@ service.interceptors.response.use(
       const { status, data } = error.response
       
       if (status === 401) {
-        // token过期或无效，清除token并跳转到登录页
+        // token过期或无效，清除token
         localStorage.removeItem('token')
         ElMessage.error('登录已过期，请重新登录')
-        router.push('/login')
+        // 已移除强制跳转到登录页的逻辑
       } else {
         ElMessage.error(data?.message || `请求失败 (${status})`)
       }

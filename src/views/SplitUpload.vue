@@ -66,15 +66,25 @@
               <div class="preview-section" v-if="previewImages.length > 0">
                 <div class="preview-header">
                   <h4>上传预览 ({{ previewImages.length }}张)</h4>
+                  <el-tag type="info" size="small">拖拽图片可调整顺序</el-tag>
                 </div>
                 
-                <div class="preview-grid">
+                <VueDraggable
+                  v-model="previewImages"
+                  class="preview-grid"
+                  :animation="200"
+                  ghostClass="ghost"
+                  chosenClass="chosen"
+                >
                   <div 
                     v-for="(image, index) in previewImages" 
-                    :key="index"
+                    :key="image.timestamp"
                     class="preview-item"
                   >
                     <div class="preview-image-container">
+                      <div class="drag-handle">
+                        <el-icon><Rank /></el-icon>
+                      </div>
                       <img :src="image.url" :alt="`预览图 ${index + 1}`" class="preview-image" />
                       <div class="preview-overlay">
                         <el-button 
@@ -90,7 +100,7 @@
                     </div>
                     <p class="image-name">{{ image.name }}</p>
                   </div>
-                </div>
+                </VueDraggable>
               </div>
 
               <!-- 空状态 -->
@@ -123,6 +133,7 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
+import { VueDraggable } from 'vue-draggable-plus'
 import { getSplitTaskApi, submitSplitImagesApi } from '../api/split'
 import { uploadImageApi } from '../api/task'
 
@@ -413,6 +424,22 @@ getOriginalImage()
 
 .preview-item {
   text-align: center;
+  cursor: move;
+  transition: transform 0.2s ease;
+}
+
+.preview-item:hover {
+  transform: scale(1.05);
+}
+
+.preview-item.chosen {
+  opacity: 0.5;
+}
+
+.preview-item.ghost {
+  opacity: 0.3;
+  background: #409eff;
+  border-radius: 8px;
 }
 
 .preview-image-container {
@@ -424,6 +451,23 @@ getOriginalImage()
   overflow: hidden;
   margin: 0 auto;
   background: #fafafa;
+}
+
+.drag-handle {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 10;
+  background: rgba(64, 158, 255, 0.9);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: move;
+  font-size: 14px;
 }
 
 .preview-image {

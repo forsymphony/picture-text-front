@@ -41,15 +41,15 @@
                     {{ formatTime(video.createTime) }}
                   </p>
                 </div>
-                <div class="video-player">
-                  <video 
-                    :src="video.videoUrl" 
-                    controls 
-                    class="video-element"
-                    preload="metadata"
+                <div class="video-link-wrapper">
+                  <a 
+                    :href="video.videoUrl" 
+                    target="_blank"
+                    class="video-link"
                   >
-                    您的浏览器不支持视频播放
-                  </video>
+                    <el-icon class="play-icon"><VideoPlay /></el-icon>
+                    <span>点击查看视频</span>
+                  </a>
                 </div>
               </div>
             </div>
@@ -124,15 +124,25 @@
                 <div class="preview-section" v-if="area.images.length > 0">
                   <div class="preview-header">
                     <h5>预览 ({{ area.images.length }}张)</h5>
+                    <el-tag type="info" size="small">拖拽调整顺序</el-tag>
                   </div>
                   
-                  <div class="preview-grid">
+                  <VueDraggable
+                    v-model="area.images"
+                    class="preview-grid"
+                    :animation="200"
+                    ghostClass="ghost"
+                    chosenClass="chosen"
+                  >
                     <div 
                       v-for="(image, imageIndex) in area.images" 
-                      :key="imageIndex"
+                      :key="image.timestamp"
                       class="preview-item"
                     >
                       <div class="preview-image-container">
+                        <div class="drag-handle">
+                          <el-icon><Rank /></el-icon>
+                        </div>
                         <img :src="image.url" :alt="`预览图 ${imageIndex + 1}`" class="preview-image" />
                         <div class="preview-overlay">
                           <el-button 
@@ -148,7 +158,7 @@
                       </div>
                       <p class="image-name">{{ image.name }}</p>
                     </div>
-                  </div>
+                  </VueDraggable>
                 </div>
 
                 <!-- 空状态 -->
@@ -182,6 +192,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElLoading } from 'element-plus'
+import { VueDraggable } from 'vue-draggable-plus'
 import { getVideoTaskApi, submitVideoTaskApi } from '../api/video'
 import { uploadImageApi } from '../api/task'
 
@@ -473,14 +484,34 @@ getVideoTask()
   font-size: 12px;
 }
 
-.video-player {
+.video-link-wrapper {
   width: 100%;
 }
 
-.video-element {
+.video-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
-  max-height: 300px;
-  border-radius: 4px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.video-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.video-link .play-icon {
+  font-size: 20px;
 }
 
 .video-placeholder {
@@ -553,6 +584,9 @@ getVideoTask()
 }
 
 .preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 10px;
 }
 
@@ -572,6 +606,22 @@ getVideoTask()
 
 .preview-item {
   text-align: center;
+  cursor: move;
+  transition: transform 0.2s ease;
+}
+
+.preview-item:hover {
+  transform: scale(1.05);
+}
+
+.preview-item.chosen {
+  opacity: 0.5;
+}
+
+.preview-item.ghost {
+  opacity: 0.3;
+  background: #409eff;
+  border-radius: 8px;
 }
 
 .preview-image-container {
@@ -583,6 +633,23 @@ getVideoTask()
   overflow: hidden;
   margin: 0 auto;
   background: #fafafa;
+}
+
+.drag-handle {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 10;
+  background: rgba(64, 158, 255, 0.9);
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: move;
+  font-size: 12px;
 }
 
 .preview-image {
