@@ -256,7 +256,7 @@ const handleConfirmUpload = async () => {
       // 调用拆分接口
       const splitResponse = await submitSplitImagesApi({
         dataId: originalImageId.value,
-        imgUrl: imgUrlList // 保持上传顺序的imgUrl数组
+        imageUrls: imgUrlList // 保持上传顺序的imgUrl数组
       })
       
       if (splitResponse.code === 200) {

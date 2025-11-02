@@ -198,8 +198,9 @@ const handleUploadImage = async (file) => {
       })
       
       if (replaceResponse.code === 200) {
-        // 只更新图片URL，dataId不变
+        // 更新图片URL和ID
         currentImage.value = replaceResponse.data.imageUrl
+        currentImageId.value = replaceResponse.data.id // 更新为新的ID
         // 重置选项
         isMainText.value = null
         isWatermarkFree.value = null
