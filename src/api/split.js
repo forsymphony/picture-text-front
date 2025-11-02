@@ -16,6 +16,6 @@ export const getSplitTaskApi = () => {
  * @returns {Promise}
  */
 export const submitSplitImagesApi = (data) => {
-  return https.post('/api/task/split/split', data)
+  return https.post('/task/split/split', data)
 }
 
