@@ -4,6 +4,10 @@
     <div class="page-header">
       <h2>图片识别</h2>
       <p>请对图片进行标注和处理</p>
+      <div class="batch-info" v-if="category || groupNo">
+        <el-tag type="primary" size="large" v-if="category">大类: {{ category }}</el-tag>
+        <el-tag type="success" size="large" v-if="groupNo">组别: {{ groupNo }}</el-tag>
+      </div>
     </div>
 
     <!-- 主要内容区域 -->
@@ -117,6 +121,8 @@ import { getRecognitionTaskApi, markContentTypeApi, markSplitImageApi, uploadIma
 // 响应式数据
 const currentImage = ref(null)
 const currentImageId = ref(null) // 存储当前图片的ID
+const category = ref(null) // 大类
+const groupNo = ref(null) // 组别
 const isMainText = ref(null)
 const isWatermarkFree = ref(null)
 const uploading = ref(false)
@@ -135,6 +141,8 @@ const getCurrentImage = async () => {
     if (response.code === 200) {
       currentImageId.value = response.data.id // 存储图片ID
       currentImage.value = response.data.imageUrl // 设置图片链接
+      category.value = response.data.category // 大类
+      groupNo.value = response.data.groupNo // 组别
     }
   } catch (error) {
     console.error('获取图片失败:', error)
@@ -283,6 +291,14 @@ getCurrentImage()
   color: #909399;
   font-size: 14px;
   margin: 0;
+}
+
+.batch-info {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  align-items: center;
 }
 
 .main-content {
