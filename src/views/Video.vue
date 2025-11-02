@@ -167,8 +167,19 @@
                 </div>
               </div>
 
-              <!-- 下一个按钮 -->
+              <!-- 按钮区域 -->
               <div class="next-section">
+                <el-button 
+                  type="danger" 
+                  size="large" 
+                  class="garbage-btn"
+                  :disabled="videos.length === 0"
+                  :loading="markingGarbage"
+                  @click="handleMarkGarbage"
+                >
+                  <el-icon><Delete /></el-icon>
+                  {{ markingGarbage ? '标记中...' : '标记为垃圾视频' }}
+                </el-button>
                 <el-button 
                   type="success" 
                   size="large" 
@@ -191,9 +202,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ElMessage, ElLoading } from 'element-plus'
+import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import { VueDraggable } from 'vue-draggable-plus'
-import { getVideoTaskApi, submitVideoTaskApi } from '../api/video'
+import { getVideoTaskApi, submitVideoTaskApi, markGarbageVideoApi } from '../api/video'
 import { uploadImageApi } from '../api/task'
 
 // 响应式数据
@@ -202,6 +213,7 @@ const category = ref(null)
 const groupNo = ref(null)
 const imageAreas = ref([{ images: [] }]) // 每个区域包含一个图片数组
 const submitting = ref(false)
+const markingGarbage = ref(false)
 
 // 计算属性：是否可以进行下一步（至少有一个区域有图片）
 const canProceedNext = computed(() => {
@@ -381,6 +393,64 @@ const formatTime = (timeStr) => {
   if (!timeStr) return ''
   const date = new Date(timeStr)
   return date.toLocaleString('zh-CN')
+}
+
+// 标记垃圾视频
+const handleMarkGarbage = async () => {
+  if (videos.value.length === 0) {
+    ElMessage.warning('没有可标记的视频')
+    return
+  }
+
+  try {
+    // 确认操作
+    await ElMessageBox.confirm(
+      `确定要将这${videos.value.length}个视频标记为垃圾视频吗？`,
+      '确认标记',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    markingGarbage.value = true
+    
+    // 显示全屏loading
+    const loading = ElLoading.service({
+      lock: true,
+      text: '正在标记垃圾视频，请稍候...',
+      background: 'rgba(0, 0, 0, 0.7)'
+    })
+
+    try {
+      // 依次标记每个视频
+      for (let i = 0; i < videos.value.length; i++) {
+        const video = videos.value[i]
+        loading.setText(`正在标记第 ${i + 1}/${videos.value.length} 个视频...`)
+        
+        const response = await markGarbageVideoApi(video.id)
+        
+        if (response.code !== 200) {
+          throw new Error(`标记第 ${i + 1} 个视频失败`)
+        }
+      }
+      
+      ElMessage.success('标记成功')
+      
+      // 获取下一组视频
+      loading.setText('正在获取下一组视频...')
+      await getVideoTask()
+    } catch (error) {
+      ElMessage.error(error.message || '标记失败，请重试')
+      console.error('标记垃圾视频失败:', error)
+    } finally {
+      loading.close()
+      markingGarbage.value = false
+    }
+  } catch {
+    // 用户取消操作
+  }
 }
 
 // 页面加载时获取视频任务
@@ -704,10 +774,18 @@ getVideoTask()
   position: sticky;
   bottom: 0;
   background: white;
+  display: flex;
+  gap: 10px;
+}
+
+.garbage-btn {
+  flex: 1;
+  height: 50px;
+  font-size: 16px;
 }
 
 .next-btn {
-  width: 100%;
+  flex: 1;
   height: 50px;
   font-size: 16px;
 }

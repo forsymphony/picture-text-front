@@ -19,3 +19,12 @@ export const submitVideoTaskApi = (data) => {
   return https.post('/video/task/submit', data)
 }
 
+/**
+ * 标记垃圾视频
+ * @param {number} videoId - 视频ID
+ * @returns {Promise}
+ */
+export const markGarbageVideoApi = (videoId) => {
+  return https.post('/video/mark-garbage', { videoId })
+}
+
