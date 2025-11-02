@@ -4,7 +4,7 @@ import router from '../router'
 
 // 创建axios实例
 const service = axios.create({
-  baseURL: process.env.NODE_ENV === 'development' ? '/api' : 'https://your-api-domain.com/api',
+  baseURL: process.env.NODE_ENV === 'development' ? '/api' : 'http://111.0.116.233:60004/api',
   timeout: 10000
 })
 
