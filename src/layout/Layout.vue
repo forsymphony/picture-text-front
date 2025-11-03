@@ -17,7 +17,7 @@
               <el-icon><Picture /></el-icon>
               <span>图片识别</span>
             </el-menu-item>
-            <el-menu-item index="/management">
+            <!-- <el-menu-item index="/management">
               <el-icon><Document /></el-icon>
               <span>图文描述</span>
             </el-menu-item>
@@ -28,7 +28,7 @@
             <el-menu-item index="/video">
               <el-icon><VideoPlay /></el-icon>
               <span>视频处理</span>
-            </el-menu-item>
+            </el-menu-item> -->
           </el-menu>
         </div>
       </el-aside>

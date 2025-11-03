@@ -21,24 +21,24 @@ const routes = [
         component: () => import('../views/Dashboard.vue'),
         meta: { requiresAuth: true, title: '图片识别' }
       },
-      {
-        path: '/management',
-        name: 'Management',
-        component: () => import('../views/Management.vue'),
-        meta: { requiresAuth: true, title: '图文描述' }
-      },
-      {
-        path: '/split-upload',
-        name: 'SplitUpload',
-        component: () => import('../views/SplitUpload.vue'),
-        meta: { requiresAuth: true, title: '拆分图上传' }
-      },
-      {
-        path: '/video',
-        name: 'Video',
-        component: () => import('../views/Video.vue'),
-        meta: { requiresAuth: true, title: '视频处理' }
-      }
+      // {
+      //   path: '/management',
+      //   name: 'Management',
+      //   component: () => import('../views/Management.vue'),
+      //   meta: { requiresAuth: true, title: '图文描述' }
+      // },
+      // {
+      //   path: '/split-upload',
+      //   name: 'SplitUpload',
+      //   component: () => import('../views/SplitUpload.vue'),
+      //   meta: { requiresAuth: true, title: '拆分图上传' }
+      // },
+      // {
+      //   path: '/video',
+      //   name: 'Video',
+      //   component: () => import('../views/Video.vue'),
+      //   meta: { requiresAuth: true, title: '视频处理' }
+      // }
     ]
   },
   // 404 页面
