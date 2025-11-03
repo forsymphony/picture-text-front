@@ -42,15 +42,8 @@
                   <el-radio :label="false">否</el-radio>
                 </el-radio-group>
               </div>
-            </div>
-          </el-card>
-        </el-col>
-
-        <!-- 右侧：操作按钮区域 -->
-        <el-col :span="8">
-          <el-card class="action-card">
-            <div class="action-buttons">
-              <el-button 
+              <div>
+                <el-button 
                 type="primary" 
                 size="large" 
                 class="action-btn"
@@ -60,6 +53,15 @@
                 <el-icon><ArrowRight /></el-icon>
                 下一张
               </el-button>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+
+        <!-- 右侧：操作按钮区域 -->
+        <el-col :span="8">
+          <el-card class="action-card">
+            <div class="action-buttons">
 
               <el-upload
                 class="upload-wrapper"
