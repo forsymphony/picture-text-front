@@ -33,12 +33,12 @@ const routes = [
       //   component: () => import('../views/SplitUpload.vue'),
       //   meta: { requiresAuth: true, title: '拆分图上传' }
       // },
-      // {
-      //   path: '/video',
-      //   name: 'Video',
-      //   component: () => import('../views/Video.vue'),
-      //   meta: { requiresAuth: true, title: '视频处理' }
-      // }
+      {
+        path: '/video',
+        name: 'Video',
+        component: () => import('../views/Video.vue'),
+        meta: { requiresAuth: true, title: '视频处理' }
+      }
     ]
   },
   // 404 页面

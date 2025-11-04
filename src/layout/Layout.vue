@@ -25,10 +25,11 @@
               <el-icon><Upload /></el-icon>
               <span>拆分图上传</span>
             </el-menu-item>
+            -->
             <el-menu-item index="/video">
               <el-icon><VideoPlay /></el-icon>
               <span>视频处理</span>
-            </el-menu-item> -->
+            </el-menu-item>
           </el-menu>
         </div>
       </el-aside>
