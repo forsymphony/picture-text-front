@@ -344,8 +344,10 @@ const handleNext = async () => {
         }
       }
       
-      // 将当前区域的URL数组添加到总数组
-      imageUrls.push(areaImageUrls)
+      // 将当前区域的URL数组添加到总数组（只有非空数组才添加）
+      if (areaImageUrls.length > 0) {
+        imageUrls.push(areaImageUrls)
+      }
     }
     
     // 更新loading文本
