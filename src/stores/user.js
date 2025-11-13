@@ -1,21 +1,25 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { loginApi, logoutApi } from '../api/user'
+import router from '../router'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref(localStorage.getItem('token') || '')
   const userInfo = ref(null)
   const isLoggedIn = ref(!!token.value)
 
-  // 登录
-  const login = async (username) => {
+  // 用户登录
+  const login = async (username, password = '', isAuditor = false) => {
     try {
-      // 调用登录接口
-      const response = await loginApi(username)
+      const response = await loginApi(username, password, isAuditor)
       
       if (response.code === 200) {
         token.value = response.data.token
-        userInfo.value = { username }
+        userInfo.value = { 
+          username: response.data.username || username, 
+          userId: response.data.userId, 
+          isAuditor: isAuditor 
+        }
         isLoggedIn.value = true
         
         // 保存token和用户信息到本地存储
@@ -43,6 +47,8 @@ export const useUserStore = defineStore('user', () => {
       isLoggedIn.value = false
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
+      // 跳转到登录页面
+      router.push('/login')
     }
   }
 
@@ -62,7 +68,7 @@ export const useUserStore = defineStore('user', () => {
         } catch (error) {
           console.error('解析用户信息失败:', error)
           // 如果解析失败，使用默认用户信息
-          userInfo.value = { username: '123', id: 1 }
+          userInfo.value = { username: '123', userId: 1, isAuditor: false }
         }
       }
     }

@@ -13,23 +13,34 @@
             class="sidebar-menu"
             router
           >
-            <el-menu-item index="/dashboard">
-              <el-icon><Picture /></el-icon>
-              <span>图片识别</span>
-            </el-menu-item>
-            <!-- <el-menu-item index="/management">
-              <el-icon><Document /></el-icon>
-              <span>图文描述</span>
-            </el-menu-item>
-            <el-menu-item index="/split-upload">
-              <el-icon><Upload /></el-icon>
-              <span>拆分图上传</span>
-            </el-menu-item>
-            -->
-            <el-menu-item index="/video">
-              <el-icon><VideoPlay /></el-icon>
-              <span>视频处理</span>
-            </el-menu-item>
+            <!-- 普通用户菜单 -->
+            <template v-if="!userStore.userInfo?.isAuditor">
+              <el-menu-item index="/dashboard">
+                <el-icon><Picture /></el-icon>
+                <span>图片识别</span>
+              </el-menu-item>
+              <!-- <el-menu-item index="/management">
+                <el-icon><Document /></el-icon>
+                <span>图文描述</span>
+              </el-menu-item>
+              <el-menu-item index="/split-upload">
+                <el-icon><Upload /></el-icon>
+                <span>拆分图上传</span>
+              </el-menu-item>
+              -->
+              <el-menu-item index="/video">
+                <el-icon><VideoPlay /></el-icon>
+                <span>视频处理</span>
+              </el-menu-item>
+            </template>
+            
+            <!-- 审核员菜单 -->
+            <template v-if="userStore.userInfo?.isAuditor">
+              <el-menu-item index="/auditor/dashboard">
+                <el-icon><Setting /></el-icon>
+                <span>审核员管理</span>
+              </el-menu-item>
+            </template>
           </el-menu>
         </div>
       </el-aside>

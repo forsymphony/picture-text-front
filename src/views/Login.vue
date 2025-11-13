@@ -3,7 +3,7 @@
     <div class="login-box">
        <div class="login-title">
          <h2>图文系统</h2>
-         <p>请输入您的用户名登录</p>
+         <p>{{ isAuditorLogin ? '请输入您的用户名和密码登录' : '请输入您的用户名登录' }}</p>
        </div>
       
       <el-form 
@@ -23,6 +23,18 @@
           />
         </el-form-item>
         
+        <!-- 审核员登录需要密码 -->
+        <el-form-item v-if="isAuditorLogin" prop="password">
+          <el-input
+            v-model="loginForm.password"
+            type="password"
+            placeholder="请输入密码"
+            size="large"
+            prefix-icon="Lock"
+            @keyup.enter="handleLogin"
+          />
+        </el-form-item>
+        
         <el-form-item>
           <el-button 
             type="primary" 
@@ -31,9 +43,20 @@
             :loading="loading"
             @click="handleLogin"
           >
-            {{ loading ? '登录中...' : '登录' }}
+            {{ loading ? '登录中...' : (isAuditorLogin ? '审核员登录' : '用户登录') }}
           </el-button>
         </el-form-item>
+        
+        <!-- 登录方式切换按钮 -->
+        <div class="login-switch">
+          <el-button 
+            type="text" 
+            size="small"
+            @click="toggleLoginType"
+          >
+            {{ isAuditorLogin ? '切换到普通用户登录' : '切换到审核员登录' }}
+          </el-button>
+        </div>
       </el-form>
     </div>
   </div>
@@ -50,16 +73,29 @@ const userStore = useUserStore()
 
 const loginFormRef = ref()
 const loading = ref(false)
+const isAuditorLogin = ref(false) // 是否为审核员登录
 
 const loginForm = reactive({
-  username: ''
+  username: '',
+  password: '' // 审核员登录需要密码
 })
 
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 2, max: 20, message: '用户名长度在 2 到 20 个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
   ]
+}
+
+// 切换登录类型
+const toggleLoginType = () => {
+  isAuditorLogin.value = !isAuditorLogin.value
+  // 重置表单验证
+  loginFormRef.value?.clearValidate()
 }
 
 const handleLogin = async () => {
@@ -71,14 +107,19 @@ const handleLogin = async () => {
   loading.value = true
   
   try {
-    await userStore.login(loginForm.username)
+    await userStore.login(loginForm.username, loginForm.password, isAuditorLogin.value)
     ElMessage.success('登录成功')
-    router.push('/dashboard')
+    // 根据登录类型跳转到不同页面
+    if (isAuditorLogin.value) {
+      router.push('/auditor')
+    } else {
+      router.push('/dashboard')
+    }
   } catch (error) {
     console.error('登录失败:', error)
     // 显示错误消息
     const errorMessage = error?.message || '登录失败，请稍后重试'
-    // ElMessage.error(errorMessage)
+    ElMessage.error(errorMessage)
   } finally {
     loading.value = false
   }
@@ -125,6 +166,11 @@ const handleLogin = async () => {
 
 .login-btn {
   width: 100%;
+}
+
+.login-switch {
+  text-align: center;
+  margin-top: 15px;
 }
 
 :deep(.el-input__inner) {
