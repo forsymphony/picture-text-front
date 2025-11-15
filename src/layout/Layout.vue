@@ -40,6 +40,10 @@
                 <el-icon><Setting /></el-icon>
                 <span>审核员管理</span>
               </el-menu-item>
+              <el-menu-item index="/auditor/audit-assignment">
+                <el-icon><DocumentChecked /></el-icon>
+                <span>审核学员作业</span>
+              </el-menu-item>
             </template>
           </el-menu>
         </div>

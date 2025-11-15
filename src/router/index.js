@@ -46,7 +46,9 @@ const routes = [
         name: 'AuditorDashboard',
         component: () => import('../views/AuditorDashboard.vue'),
         meta: { requiresAuth: true, title: '审核员管理', isAuditor: true }
-      }
+      },
+      // 审核员路由
+      {        path: '/auditor/audit-assignment/:id',        name: 'AuditorAssignment',        component: () => import('../views/AuditAssignment.vue'),        meta: { requiresAuth: true, title: '审核任务', isAuditor: true }      }
     ]
   },
   // 404 页面

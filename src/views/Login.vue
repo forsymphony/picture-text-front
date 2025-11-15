@@ -111,7 +111,7 @@ const handleLogin = async () => {
     ElMessage.success('登录成功')
     // 根据登录类型跳转到不同页面
     if (isAuditorLogin.value) {
-      router.push('/auditor')
+      router.push('/auditor/dashboard')
     } else {
       router.push('/dashboard')
     }

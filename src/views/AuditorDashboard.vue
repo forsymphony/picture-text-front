@@ -60,8 +60,15 @@
                       {{ scope.row.groupCount || 0 }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="操作" width="200" fixed="right">
+                  <el-table-column label="操作" width="300" fixed="right">
                     <template #default="scope">
+                      <el-button
+                        type="success"
+                        size="small"
+                        @click="handleAudit(scope.row.userId)"
+                      >
+                        审核作业
+                      </el-button>
                       <el-button
                         type="danger"
                         size="small"
@@ -72,6 +79,19 @@
                     </template>
                   </el-table-column>
                 </el-table>
+                
+                <!-- 分页组件 -->
+                <div class="pagination-container">
+                  <el-pagination
+                    v-model:current-page="pagination.currentPage"
+                    v-model:page-size="pagination.pageSize"
+                    :page-sizes="[10, 20, 50, 100]"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="pagination.total"
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                  />
+                </div>
               </div>
             </div>
           </el-card>
@@ -84,8 +104,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 import https from '../utils/https'
 import { useUserStore } from '../stores/user'
+
+// 路由
+const router = useRouter()
 
 // 移除标签页相关代码
 
@@ -105,6 +129,13 @@ const selectedStudentIds = ref([])
 // 选中的已分配学生列表（待解绑）
 const selectedAssignedStudents = ref([])
 
+// 分页参数
+const pagination = ref({
+  currentPage: 1,
+  pageSize: 10,
+  total: 0
+})
+
 // 处理表格选择事件
 const handleSelectionChange = (selection) => {
   selectedAssignedStudents.value = selection
@@ -113,11 +144,25 @@ const handleSelectionChange = (selection) => {
 // 获取已分配学生列表
 const fetchAssignedStudents = async () => {
   try {
-    const response = await https.get(`/auditor/students/assigned?auditorId=${currentUser.userId}`)
-    assignedStudents.value = response.data || []
+    const response = await https.get(`/auditor/students/assigned?auditorId=${currentUser.userId}&pageNum=${pagination.value.currentPage}&pageSize=${pagination.value.pageSize}`)
+    assignedStudents.value = response.data.records || []
+    pagination.value.total = response.data.total || 0
   } catch (error) {
     console.error('获取已分配学生列表失败：', error)
   }
+}
+
+// 分页大小改变
+const handleSizeChange = (size) => {
+  pagination.value.pageSize = size
+  pagination.value.currentPage = 1
+  fetchAssignedStudents()
+}
+
+// 当前页码改变
+const handleCurrentChange = (current) => {
+  pagination.value.currentPage = current
+  fetchAssignedStudents()
 }
 
 // 获取可分配学生列表
@@ -167,6 +212,11 @@ const unassignStudent = async (studentId) => {
   } catch (error) {
     console.error('学生解绑失败：', error)
   }
+}
+
+// 审核学生作业
+const handleAudit = (studentId) => {
+  router.push(`/auditor/audit-assignment/${studentId}`)
 }
 
 // 批量解绑学生
@@ -267,12 +317,18 @@ onMounted(async () => {
 }
 
 .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 30px;
-  margin-bottom: 15px;
-}
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 30px;
+      margin-bottom: 15px;
+    }
+
+    .pagination-container {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
 
 .student-config-section h4 {
   color: #333;
