@@ -164,7 +164,7 @@
         </el-col>
       </el-row>
       
-      <!-- 底部返回按钮 -->
+      <!-- 底部操作按钮 -->
       <div class="bottom-actions">
         <el-button 
           type="info" 
@@ -174,6 +174,16 @@
         >
           <el-icon><Back /></el-icon>
           返回学员列表
+        </el-button>
+        <el-button 
+          type="primary" 
+          size="large" 
+          class="next-btn"
+          @click="nextAssignment"
+          :disabled="!groupNo"
+        >
+          <el-icon><Right /></el-icon>
+          下一份学员作业
         </el-button>
       </div>
     </div>
@@ -185,7 +195,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElLoading } from 'element-plus'
-import { VideoPlay, Picture, Close, Check, Star, Back, Delete, Rank, Plus } from '@element-plus/icons-vue'
+import { VideoPlay, Picture, Close, Check, Star, Back, Delete, Rank, Plus, Right } from '@element-plus/icons-vue'
 import request from '../utils/https'
 import { VueDraggable } from 'vue-draggable-plus'
 
@@ -298,6 +308,33 @@ const loadStudentAssignmentData = async (studentId) => {
 // 返回学员列表
 const goBack = () => {
   router.push('/auditor/dashboard')
+}
+
+// 下一份学员作业
+const nextAssignment = async () => {
+  if (!groupNo.value) {
+    ElMessage.warning('当前没有可处理的分组')
+    return
+  }
+  
+  try {
+    isProcessing.value = true
+    // 调用后端接口标记当前分组为已审核
+    const response = await request.post('/auditor/markGroupAsAudited', { groupNo: groupNo.value })
+    
+    if (response.code === 200) {
+      ElMessage.success('当前分组已标记为已审核')
+      // 重新加载学员作业视频信息
+      await loadStudentAssignmentData(assignmentInfo.value.studentId)
+    } else {
+      ElMessage.error(response.message || '操作失败')
+    }
+  } catch (error) {
+    ElMessage.error('操作失败')
+    console.error('标记分组为已审核失败:', error)
+  } finally {
+    isProcessing.value = false
+  }
 }
 
 
