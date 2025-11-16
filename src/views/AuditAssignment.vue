@@ -79,79 +79,27 @@
                 :key="areaIndex"
                 class="image-area"
               >
-                <div class="area-header">
-                  <h4>区域 {{ areaIndex + 1 }}</h4>
-                  <el-button 
-                    type="danger" 
-                    size="small" 
-                    :disabled="imageAreas.length === 1"
-                    @click="removeImageArea(areaIndex)"
-                  >
-                    <el-icon><Delete /></el-icon>
-                    删除区域
-                  </el-button>
-                </div>
-
-                <!-- 上传按钮 -->
-                <div class="upload-section">
-                  <el-upload
-                    class="upload-area"
-                    :show-file-list="false"
-                    :before-upload="(file) => handleUploadImages(file, areaIndex)"
-                    accept="image/*"
-                    multiple
-                  >
-                    <el-button 
-                      type="primary" 
-                      size="default" 
-                      class="upload-btn"
-                    >
-                      <el-icon><Plus /></el-icon>
-                      上传图片
-                    </el-button>
-                  </el-upload>
-                  <p class="upload-tips">可同时选择多张图片上传</p>
-                </div>
-
                 <!-- 预览图片区域 -->
                 <div class="preview-section" v-if="area.images.length > 0">
                   <div class="preview-header">
                     <h5>预览 ({{ area.images.length }}张)</h5>
-                    <el-tag type="info" size="small">拖拽调整顺序</el-tag>
                   </div>
                   
-                  <VueDraggable
-                    v-model="area.images"
-                    class="preview-grid"
-                    :animation="200"
-                    ghostClass="ghost"
-                    chosenClass="chosen"
-                  >
-                    <div 
-                      v-for="(image, imageIndex) in area.images" 
+                  <!-- 预览网格 -->
+                  <div class="preview-grid">
+                    <div
+                      v-for="(image, imageIndex) in area.images"
                       :key="image.timestamp"
                       class="preview-item"
+                      @mouseenter="(e) => handleImageHover(e, image)"
+                      @mouseleave="handleImageLeave"
                     >
                       <div class="preview-image-container">
-                        <div class="drag-handle">
-                          <el-icon><Rank /></el-icon>
-                        </div>
                         <img :src="image.url" :alt="`预览图 ${imageIndex + 1}`" class="preview-image" @click="previewImage(image.url)" />
-                        <div class="preview-overlay">
-                          <el-button 
-                            type="danger" 
-                            size="small" 
-                            circle 
-                            @click="removePreviewImage(areaIndex, imageIndex)"
-                            class="remove-btn"
-                          >
-                            <el-icon><Close /></el-icon>
-                          </el-button>
-                        </div>
                       </div>
                       <p class="image-name">{{ image.name }}</p>
                     </div>
-                  </VueDraggable>
+                  </div>
                 </div>
 
                 <!-- 空状态 -->
@@ -162,9 +110,17 @@
             </div>
           </el-card>
         </el-col>
-      </el-row>
-      
-      <!-- 底部操作按钮 -->
+        </el-row>
+        
+        <!-- 固定悬浮层 - 显示在视频列表区域上方 -->
+        <div 
+          v-if="hoveredImage" 
+          class="fixed-image-popup"
+        >
+          <img :src="hoveredImage.url" :alt="hoveredImage.name" class="popup-image" />
+        </div>
+        
+        <!-- 底部操作按钮 -->
       <div class="bottom-actions">
         <el-button 
           type="info" 
@@ -174,6 +130,16 @@
         >
           <el-icon><Back /></el-icon>
           返回学员列表
+        </el-button>
+        <el-button 
+          type="danger" 
+          size="large" 
+          class="reject-btn"
+          @click="rejectAssignment"
+          :disabled="!groupNo"
+        >
+          <el-icon><Delete /></el-icon>
+          打回学员作业
         </el-button>
         <el-button 
           type="primary" 
@@ -197,7 +163,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElLoading } from 'element-plus'
 import { VideoPlay, Picture, Close, Check, Star, Back, Delete, Rank, Plus, Right } from '@element-plus/icons-vue'
 import request from '../utils/https'
-import { VueDraggable } from 'vue-draggable-plus'
+
 
 // 路由
 const router = useRouter()
@@ -222,6 +188,9 @@ const category = ref(null)
 const groupNo = ref(null)
 // 图片区域
 const imageAreas = ref([{ images: [] }])
+// 当前悬浮的图片信息
+const hoveredImage = ref(null)
+const hoveredPosition = ref({ x: 0, y: 0 })
 
 
 
@@ -337,6 +306,35 @@ const nextAssignment = async () => {
   }
 }
 
+// 打回学员作业
+const rejectAssignment = async () => {
+  if (!groupNo.value) {
+    ElMessage.warning('当前没有可处理的分组')
+    return
+  }
+  
+  try {
+    isProcessing.value = true
+    // 调用后端接口打回当前分组作业
+    console.log(groupNo.value);
+    
+    const response = await request.post('/auditor/rejectStudentAssignment', { groupNo: groupNo.value })
+    
+    if (response.code === 200) {
+      ElMessage.success('作业已成功打回')
+      // 重新加载学员作业视频信息
+      await loadStudentAssignmentData(assignmentInfo.value.studentId)
+    } else {
+      ElMessage.error(response.message || '操作失败')
+    }
+  } catch (error) {
+    ElMessage.error('操作失败')
+    console.error('打回作业失败:', error)
+  } finally {
+    isProcessing.value = false
+  }
+}
+
 
 // 删除图片上传区域
 const removeImageArea = (index) => {
@@ -378,12 +376,7 @@ const handleUploadImages = async (file, areaIndex) => {
   return false // 阻止默认上传行为
 }
 
-// 删除预览图片
-const removePreviewImage = (areaIndex, imageIndex) => {
-  const image = imageAreas.value[areaIndex].images[imageIndex]
-  imageAreas.value[areaIndex].images.splice(imageIndex, 1)
-  ElMessage.success(`已删除图片: ${image.name}`)
-}
+
 
 // 获取状态标签类型
 const getStatusType = (status) => {
@@ -410,6 +403,21 @@ const formatTime = (timeStr) => {
 const previewImage = (url) => {
   // 可以使用 Element Plus 的 Image 预览组件或自定义弹窗
   window.open(url, '_blank')
+}
+
+// 处理图片悬浮事件
+const handleImageHover = (event, image) => {
+  hoveredImage.value = image
+  // 固定悬浮层到视频列表区域
+  hoveredPosition.value = {
+    x: 0,
+    y: 0
+  }
+}
+
+// 处理图片离开事件
+const handleImageLeave = () => {
+  hoveredImage.value = null
 }
 
 
@@ -624,22 +632,60 @@ const previewImage = (url) => {
 
 .preview-item {
   text-align: center;
-  cursor: move;
-  transition: transform 0.2s ease;
 }
 
-.preview-item:hover {
-  transform: scale(1.05);
-}
-
-.preview-item.chosen {
-  opacity: 0.5;
-}
-
-.preview-item.ghost {
-  opacity: 0.3;
-  background: #409eff;
+/* 悬浮原图预览样式 */
+/* 固定悬浮层样式 - 覆盖在视频列表区域 */
+.fixed-image-popup {
+  position: fixed;
+  top: 100px; /* 调整到视频列表区域位置 */
+  left: 20px;
+  width: 300px; /* 视频列表区域宽度 */
+  height: 400px; /* 视频列表区域高度 */
+  background: white;
+  border: 1px solid #ddd;
   border-radius: 8px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  z-index: 9999; /* 设置为最高层级，确保在最外层 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* 防止悬浮窗影响下层交互 */
+  overflow: hidden;
+}
+
+.popup-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.preview-image-container {
+  width: 100px;
+  height: 100px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0 auto;
+  background: #fafafa;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 增强图片放大效果，确保放大后图片保持清晰 */
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  position: relative;
 }
 
 .preview-image-container {
@@ -651,52 +697,7 @@ const previewImage = (url) => {
   overflow: hidden;
   margin: 0 auto;
   background: #fafafa;
-}
-
-.drag-handle {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  z-index: 10;
-  background: rgba(64, 158, 255, 0.9);
-  color: white;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: move;
-  font-size: 12px;
-}
-
-.preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.preview-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.preview-image-container:hover .preview-overlay {
-  opacity: 1;
-}
-
-.remove-btn {
-  width: 28px;
-  height: 28px;
+  transition: box-shadow 0.3s ease;
 }
 
 .image-name {
