@@ -8,6 +8,10 @@
         <el-tag type="primary" size="large">分组号: {{ groupNo }}</el-tag>
         <el-tag type="success" size="large">大类: {{ category }}</el-tag>
         <el-tag type="info" size="large">视频数量: {{ videos.length }}</el-tag>
+        <el-tag type="info" size="large">分组统计: {{ groupStats.groupCount }}</el-tag>
+        <el-tag type="success" size="large">已审核分组: {{ groupStats.auditedGroupCount }}</el-tag>
+        <el-tag type="danger" size="large">已删除分组: {{ groupStats.deletedGroupCount }}</el-tag>
+        <el-tag type="warning" size="large">未检查分组: {{ groupStats.uncheckedGroupCount }}</el-tag>
       </div>
     </div>
 
@@ -183,6 +187,14 @@ const assignmentInfo = ref({
   type: ''
 })
 
+// 学员分组统计数据
+const groupStats = ref({
+  groupCount: 0,
+  auditedGroupCount: 0,
+  deletedGroupCount: 0,
+  uncheckedGroupCount: 0
+})
+
 const videos = ref([])
 const category = ref(null)
 const groupNo = ref(null)
@@ -232,10 +244,26 @@ const loadStudentAssignmentData = async (studentId) => {
     assignmentInfo.value.studentName = studentRes.data.username
     assignmentInfo.value.studentId = studentId
     
-    // 2. 获取学员作业视频信息
+    // 2. 获取学员分组统计数据
+      try {
+        const statsRes = await request.get('/auditor/getStudentGroupStats', { params: { studentId: studentId } })
+        if (statsRes.code === 200 && statsRes.data) {
+          const stats = statsRes.data
+          groupStats.value = {
+            groupCount: stats.groupCount||0,
+            auditedGroupCount: stats.auditedGroupCount || 0,
+            deletedGroupCount: stats.deletedGroupCount || 0,
+            uncheckedGroupCount: stats.uncheckedGroupCount || 0
+          }
+        }
+      } catch (error) {
+        console.error('获取学员分组统计数据失败:', error)
+      }
+    
+    // 3. 获取学员作业视频信息
     await getVideoTask(studentId)
     
-    // 3. 获取图片数据
+    // 4. 获取图片数据
     if (videos.value.length > 0) {
       const videoIds = videos.value.map(video => video.id)
       try {

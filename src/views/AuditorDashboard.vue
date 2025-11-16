@@ -60,7 +60,22 @@
                       {{ scope.row.groupCount || 0 }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="操作" width="300" fixed="right">
+                  <el-table-column prop="auditedGroupCount" label="已审核分组数量" width="160">
+                    <template #default="scope">
+                      {{ scope.row.auditedGroupCount || 0 }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="deletedGroupCount" label="已删除分组数量" width="160">
+                    <template #default="scope">
+                      {{ scope.row.deletedGroupCount || 0 }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="uncheckedGroupCount" label="未检查分组数量" width="160">
+                    <template #default="scope">
+                      {{ scope.row.uncheckedGroupCount || 0 }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="200" fixed="right">
                     <template #default="scope">
                       <el-button
                         type="success"
